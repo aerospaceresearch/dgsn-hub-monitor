@@ -5,11 +5,21 @@ import platform
 #from os import path
 path_separator = os.sep
 import time
+import timeit
 import numpy as np
 
 from scipy import fft
 import matplotlib, scipy.fftpack
 from pylab import plt
+from scipy import signal
+from scipy import misc
+
+def edge_detection1(inp):
+    kernel = np.array([[ -1+1j, 0+2j,  +1+1j],
+                         [-2+0j, 0+0j, 2+0j],
+                         [-1-1j, 0-2j,  1-1j]]) # Gx + j*Gy
+    grad = np.abs(scipy.signal.convolve2d(inp, kernel, boundary='symm', mode='same'))
+    return grad
 
 def edge_detection(inp):
     kernel_x = [[-1.0, 0.0, 1.0],
@@ -203,7 +213,7 @@ def signal_substraction(file, window, samplerate, df, every, result_of_fft):
     # so we can find a superposed signal easier this way.
     threshold = meaning(result_of_fft)
     signal_lowered = substract(result_of_fft, threshold)
-    print(time.time(), "lowering done")
+    print(time.time(), timeit.default_timer()-time_start, "lowering done")
 
     v = np.zeros((len(signal_lowered), window))
     #w = np.zeros((len(signal_lowered), window))
@@ -229,7 +239,7 @@ def signal_substraction(file, window, samplerate, df, every, result_of_fft):
         plt.show()
         '''
 
-        edged = signal(edge_detection(u))
+        edged = signal(edge_detection1(u))
         #print(np.max(edged))
         #graved = centerofgravity(edged)
         #signal_strength.append(np.sum(edged))
@@ -239,7 +249,7 @@ def signal_substraction(file, window, samplerate, df, every, result_of_fft):
             for l in range(len(edged[k])):
                 v[k][j+l] = edged[k][l]# + signaaaal
 
-    print(time.time(), "edging done")
+    print(time.time(), timeit.default_timer()-time_start, "edging done")
 
     w3 = []
     filename3 = file+"_all.png"
@@ -289,7 +299,7 @@ def detect_signal(file, window, samplerate, df, every, v, xf, f_center):
         #print("band", bandrange[-1])
         #print("test", start[-1], df, bandrange[-1])
 
-    print(time.time(), "graphing start")
+    print(time.time(), timeit.default_timer()-time_start, "graphing start")
     foundknownsignal = []
     foundknownsignal1 = []
     for j in range(len(f)):
@@ -316,7 +326,7 @@ def detect_signal(file, window, samplerate, df, every, v, xf, f_center):
         plt.savefig(filename1, format='png', dpi=100)
         #plt.show()
 
-    print(time.time(), "graphing end")
+    print(time.time(), timeit.default_timer()-time_start, "graphing end")
 
     '''
     #signal_strength = signal_strength / np.max(signal_strength)
@@ -330,7 +340,9 @@ def detect_signal(file, window, samplerate, df, every, v, xf, f_center):
     return foundknownsignal, foundknownsignal1
 
 def monitor(a, a1, temp, iq_stream):
-    print(time.time(), "monitoring start")
+    global time_start
+    time_start = timeit.default_timer()
+    print(time.time(), timeit.default_timer()-time_start, "monitoring start")
     file = temp[0]+"_"+temp[1]+"_"+temp[2]
     file_sdr = a+path_separator+a1[1]+path_separator+temp[0]+"_"+temp[1]+"_"+temp[2]+".npy"
     if os.path.exists(file_sdr):
@@ -361,9 +373,9 @@ def monitor(a, a1, temp, iq_stream):
     print(every)
 
     signal_fft = make_fft(file, window, samplerate, df, every, iq_stream)
-    print(time.time(), "fft done")
+    print(time.time(), timeit.default_timer()-time_start, "fft done")
     signal_lowered = signal_substraction(file, window, samplerate, df, every, signal_fft)
-    print(time.time(), "substraction done")
+    print(time.time(), timeit.default_timer()-time_start, "substraction done")
     return detect_signal(file, window, samplerate, df, every, signal_lowered, xf, center_frequency)
 
 
